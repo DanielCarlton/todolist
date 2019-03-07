@@ -18,6 +18,15 @@ router.get('/register', (req, res) => {
   res.render('users/register');
 });
 
+// Login Form POST
+router.post('/login', (req, res, next) => {
+  passport.authenticate('local', {
+    successRedirect: '/tasks',
+    failureRedirect: '/users/login',
+    failureFlash: true
+  })(req, res, next);
+});
+
 // Register Form POST
 router.post('/register', (req, res) => {
   let errors = [];
@@ -54,15 +63,15 @@ router.post('/register', (req, res) => {
             bcrypt.hash(newUser.password, salt, (err, hash) => {
               if (err) throw err;
               newUser.password = hash;
+              new User(newUser)
+                .save()
+                .then(user => {
+                  req.flash('success_msg', 'Registration successful');
+                  res.redirect('/users/login');
+                })
+                .catch(err => console.log(err));
             });
           });
-          new User(newUser)
-            .save()
-            .then(user => {
-              req.flash('success_msg', 'Registration successful');
-              res.redirect('/users/login');
-            })
-            .catch(err => console.log(err));
         }
       })
       .catch(err => console.log(err));

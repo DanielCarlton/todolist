@@ -5,13 +5,20 @@ const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const session = require('express-session');
 const flash = require('connect-flash');
+const passport = require('passport');
 const mongoose = require('mongoose');
+
+// Remove warning. "DeprecationWarning: collection.ensureIndex is deprecated. Use createIndexes instead."
+mongoose.set('useCreateIndex', true);
 
 const app = express();
 
 // Load routes
 const tasks = require('./routes/tasks');
 const users = require('./routes/users');
+
+// Passport Config
+require('./config/passport')(passport);
 
 // Connect to mongo db
 mongoose
@@ -35,7 +42,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Method Override middleware
 app.use(methodOverride('_method'));
 
-// Session middleware
+// Express session middleware
 app.use(
   session({
     secret: 'secret',
@@ -43,6 +50,10 @@ app.use(
     saveUninitialized: true
   })
 );
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Flash middleware
 app.use(flash());
@@ -52,6 +63,7 @@ app.use(function(req, res, next) {
   res.locals.success_msg = req.flash('success_msg');
   res.locals.error_msg = req.flash('error_msg');
   res.locals.error = req.flash('error');
+  res.locals.user = req.user || null;
   next();
 });
 
