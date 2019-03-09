@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const { ensureAuthenticated } = require('../helpers/auth');
 
 // Load task model
 require('../models/Task');
 const Task = mongoose.model('tasks');
 
 // Tasks index page
-router.get('/', (req, res) => {
-  Task.find({})
+router.get('/', ensureAuthenticated, (req, res) => {
+  Task.find({ user: req.user.id })
     .sort({ date: 'descending' })
     .then(tasks => {
       res.render('tasks/index', {
@@ -19,7 +20,7 @@ router.get('/', (req, res) => {
 });
 
 // Process Form
-router.post('/', (req, res) => {
+router.post('/', ensureAuthenticated, (req, res) => {
   let errors = [];
 
   if (!req.body.title) {
@@ -37,7 +38,8 @@ router.post('/', (req, res) => {
   } else {
     const newTask = {
       title: req.body.title,
-      details: req.body.details
+      details: req.body.details,
+      user: req.user.id
     };
     new Task(newTask)
       .save()
@@ -50,23 +52,28 @@ router.post('/', (req, res) => {
 });
 
 // Add Task Form
-router.get('/add', (req, res) => {
+router.get('/add', ensureAuthenticated, (req, res) => {
   res.render('tasks/add');
 });
 
 // Edit Task Form
-router.get('/edit/:id', (req, res) => {
+router.get('/edit/:id', ensureAuthenticated, (req, res) => {
   Task.findOne({
     _id: req.params.id
   }).then(task => {
-    res.render('tasks/edit', {
-      task: task
-    });
+    if (task.user != req.user.id) {
+      req.flash('error_msg', 'Not authorised');
+      res.redirect('/tasks');
+    } else {
+      res.render('tasks/edit', {
+        task: task
+      });
+    }
   });
 });
 
 // Edit Task process
-router.put('/:id', (req, res) => {
+router.put('/:id', ensureAuthenticated, (req, res) => {
   Task.findOne({
     _id: req.params.id
   }).then(task => {
@@ -82,7 +89,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete Task process
-router.delete('/:id', (req, res) => {
+router.delete('/:id', ensureAuthenticated, (req, res) => {
   Task.deleteOne({ _id: req.params.id }).then(() => {
     req.flash('success_msg', 'Task removed');
     res.redirect('/tasks');
