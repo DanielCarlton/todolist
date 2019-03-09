@@ -2,9 +2,9 @@
   "name": "todolist",
   "version": "1.0.0",
   "description": "To do list app",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js"
   },
   "author": "Daniel Carlton",
   "license": "MIT",
